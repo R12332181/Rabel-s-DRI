@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Dreamify - 织梦岛 (Rabel Ultimate)</title>
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
+            --glass-bg: rgba(255, 255, 255, 0.75);
+            --glass-card: rgba(255, 255, 255, 0.6);
+            --text-main: #1d1d1f; /* Apple Dark */
+            --text-secondary: #86868b;
+            --accent-color: #007aff;
+            --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.04);
+            --shadow-deep: 0 20px 50px rgba(0, 0, 0, 0.1);
+            --nav-height: 80px;
+            --radius-l: 32px;
+            --radius-m: 20px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: #f5f5f7;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            position: relative;
+            color: var(--text-main);
+        }
+
+        /* --- Watermark (Rabel) --- */
+        .watermark-floating {
+            position: fixed;
+            top: -50%; left: -50%; width: 200%; height: 200%;
+            pointer-events: none; z-index: 9999;
+            display: flex; flex-wrap: wrap;
+            justify-content: space-around; align-content: space-around;
+            opacity: 0.02; transform: rotate(-30deg);
+        }
+        .watermark-text { font-size: 24px; font-weight: 900; margin: 50px; font-family: serif; }
+        .copyright-footer { position: absolute; bottom: 5px; width: 100%; text-align: center; font-size: 10px; color: #d1d1d6; z-index: 1000; pointer-events: none; }
+
+        /* --- Background Atmosphere --- */
+        .bg-gradient {
+            position: absolute; width: 100%; height: 100%; z-index: -1;
+            background: radial-gradient(circle at 50% 30%, #fbfaff 0%, #e6efff 100%);
+        }
+        .bg-orb {
+            position: absolute; border-radius: 50%; filter: blur(90px); z-index: -1;
+            opacity: 0.5; animation: float 15s infinite ease-in-out alternate;
+        }
+        .orb-1 { width: 300px; height: 300px; background: #e0c3fc; top: -10%; left: -20%; }
+        .orb-2 { width: 400px; height: 400px; background: #c2e9fb; bottom: -10%; right: -10%; animation-delay: -5s; }
+
+        @keyframes float { 0% { transform: translate(0, 0); } 100% { transform: translate(30px, 40px); } }
+
+        /* --- Layout --- */
+        .app-wrapper { height: 100%; display: flex; flex-direction: column; padding-bottom: var(--nav-height); }
+        .view-container { flex: 1; position: relative; overflow-y: auto; padding: 20px 24px; scrollbar-width: none; }
+        .view-container::-webkit-scrollbar { display: none; }
+
+        .view-section {
+            display: none; flex-direction: column; min-height: 100%;
+            animation: fadeScale 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .view-section.active { display: flex; }
+
+        @keyframes fadeScale {
+            from { opacity: 0; transform: scale(0.96); filter: blur(5px); }
+            to { opacity: 1; transform: scale(1); filter: blur(0); }
+        }
+
+        /* --- Typography --- */
+        h1 { font-size: 30px; font-weight: 700; margin-bottom: 5px; letter-spacing: -0.5px; }
+        .subtitle { font-size: 15px; color: var(--text-secondary); margin-bottom: 25px; }
+        h2 { font-size: 18px; font-weight: 600; margin-bottom: 12px; margin-top: 24px; }
+
+        /* --- Components --- */
+        
+        /* Profile / Onboarding */
+        .avatar-preview {
+            width: 100px; height: 100px; border-radius: 50%;
+            background: white; box-shadow: var(--shadow-soft);
+            margin: 0 auto 20px; overflow: hidden; border: 3px solid white;
+        }
+        .avatar-preview img { width: 100%; height: 100%; object-fit: cover; }
+        .input-field {
+            width: 100%; padding: 16px; border-radius: 16px; border: 1px solid rgba(0,0,0,0.05);
+            background: rgba(255,255,255,0.5); font-size: 16px; outline: none; text-align: center;
+            margin-bottom: 20px; transition: all 0.3s;
+        }
+        .input-field:focus { background: white; box-shadow: var(--shadow-soft); }
+
+        /* Sleep Tracker */
+        .tracker-card {
+            background: var(--glass-card); padding: 20px; border-radius: var(--radius-m);
+            margin-bottom: 20px; display: flex; flex-direction: column; gap: 15px;
+        }
+        .mood-selector { display: flex; justify-content: space-between; }
+        .mood-btn { font-size: 24px; opacity: 0.4; transition: 0.2s; cursor: pointer; filter: grayscale(1); }
+        .mood-btn.selected { opacity: 1; transform: scale(1.2); filter: grayscale(0); }
+        
+        .slider-container { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--text-secondary); }
+        input[type=range] { flex: 1; accent-color: #8e44ad; }
+
+        /* Dream Input */
+        textarea {
+            width: 100%; flex: 1; min-height: 150px; border: none;
+            background: var(--glass-bg); backdrop-filter: blur(20px);
+            border-radius: var(--radius-m); padding: 20px;
+            font-size: 16px; line-height: 1.6; color: var(--text-main);
+            resize: none; outline: none; box-shadow: var(--shadow-soft);
+        }
+        textarea::placeholder { color: #aeaeb2; }
+
+        /* Analysis Toggle */
+        .mode-toggle {
+            display: flex; background: rgba(0,0,0,0.05); border-radius: 14px; padding: 4px; margin-top: 20px;
+        }
+        .mode-option {
+            flex: 1; text-align: center; padding: 10px; font-size: 13px; font-weight: 600;
+            color: var(--text-secondary); border-radius: 10px; cursor: pointer; transition: all 0.3s;
+        }
+        .mode-option.active { background: white; color: var(--text-main); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+
+        /* Main Button */
+        .btn-primary {
+            width: 100%; height: 56px; border: none; border-radius: 28px;
+            background: var(--text-main); color: white;
+            font-size: 16px; font-weight: 600; margin-top: 20px;
+            cursor: pointer; box-shadow: var(--shadow-deep);
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            transition: transform 0.2s;
+        }
+        .btn-primary:active { transform: scale(0.97); }
+        .btn-ghost { background: white; color: var(--text-main); border: 1px solid rgba(0,0,0,0.05); }
+
+        /* Result Card */
+        .visual-card {
+            width: 100%; height: 240px; border-radius: var(--radius-l); overflow: hidden;
+            margin-bottom: 20px; position: relative; box-shadow: var(--shadow-soft);
+            background: #eee;
+        }
+        .visual-card img { width: 100%; height: 100%; object-fit: cover; transition: transform 1s; }
+        .analysis-box {
+            background: white; padding: 24px; border-radius: var(--radius-l);
+            box-shadow: var(--shadow-soft); margin-bottom: 20px;
+        }
+        .tag { 
+            display: inline-block; padding: 4px 10px; background: #f0f0f5; 
+            color: #86868b; border-radius: 8px; font-size: 11px; margin-bottom: 12px; font-weight: 600; 
+        }
+
+        /* Navigation */
+        .bottom-nav {
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+            width: 85%; max-width: 360px; height: 64px;
+            background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(20px);
+            border-radius: 32px; display: flex; justify-content: space-around; align-items: center;
+            box-shadow: var(--shadow-deep); z-index: 100;
+        }
+        .nav-item { display: flex; flex-direction: column; align-items: center; opacity: 0.4; transition: 0.3s; }
+        .nav-item.active { opacity: 1; color: #000; }
+
+        /* Share Modal */
+        .share-modal {
+            position: fixed; top:0; left:0; right:0; bottom:0;
+            background: rgba(255,255,255,0.95); backdrop-filter: blur(15px);
+            z-index: 2000; display: flex; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none; transition: 0.4s;
+        }
+        .share-modal.open { opacity: 1; pointer-events: all; }
+        
+        .share-card {
+            width: 320px; background: white; border-radius: 24px; overflow: hidden;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.15); transform: scale(0.9); transition: 0.4s;
+        }
+        .share-modal.open .share-card { transform: scale(1); }
+
+        /* User Badge in Share */
+        .user-badge {
+            display: flex; align-items: center; gap: 10px; padding: 20px 20px 0;
+        }
+        .badge-avatar { width: 36px; height: 36px; border-radius: 50%; background: #f0f0f0; }
+        .badge-info h4 { font-size: 14px; color: #000; }
+        .badge-info span { font-size: 10px; color: #999; text-transform: uppercase; }
+
+        /* Loading */
+        .loader {
+            position: absolute; top:0; left:0; width:100%; height:100%;
+            background: rgba(255,255,255,0.9); z-index: 500;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none; transition: 0.3s;
+        }
+        .loader.show { opacity: 1; pointer-events: all; }
+        .pulse-ring {
+            width: 60px; height: 60px; border-radius: 50%; background: var(--text-main);
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse { 0% { transform: scale(0.8); opacity: 0.5; } 100% { transform: scale(1.5); opacity: 0; } }
+
+        /* Audio Button */
+        .bgm-toggle {
+            position: fixed; top: 20px; right: 20px; z-index: 101;
+            width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,0.5);
+            display: flex; justify-content: center; align-items: center; backdrop-filter: blur(10px);
+            cursor: pointer; opacity: 0.6;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="bg-gradient"></div>
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-orb orb-2"></div>
+
+    <!-- BGM Controls (Hidden Element logic) -->
+    <div class="bgm-toggle" onclick="toggleMute()" id="bgm-btn">
+        <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+    </div>
+
+    <!-- Watermark -->
+    <div class="watermark-floating">
+        <div class="watermark-text">Made by Rabel</div>
+        <div class="watermark-text">Dreamify</div>
+        <div class="watermark-text">Rabel Ultimate</div>
+        <div class="watermark-text">Psychology</div>
+        <div class="watermark-text">Made by Rabel</div>
+        <div class="watermark-text">Dreamify</div>
+    </div>
+    <div class="copyright-footer">Rabel© 2025 All Rights Reserved</div>
+
+    <div class="app-wrapper">
+        
+        <!-- 1. Onboarding / Profile Settings -->
+        <div id="view-onboarding" class="view-section active">
+            <div style="flex:1; display:flex; flex-direction:column; justify-content:center; padding: 0 20px;">
+                <h1 style="text-align:center; margin-bottom: 10px;">欢迎登岛</h1>
+                <p class="subtitle" style="text-align:center;">建立你的潜意识档案</p>
+                
+                <div class="avatar-preview">
+                    <img id="onboard-avatar" src="https://api.dicebear.com/7.x/notionists/svg?seed=Dreamer" alt="Avatar">
+                </div>
+                
+                <input type="text" id="username-input" class="input-field" placeholder="怎么称呼你？" oninput="updateAvatar(this.value)">
+                
+                <button class="btn-primary" onclick="finishOnboarding()">
+                    <span>进入梦境</span>
+                </button>
+                <p style="text-align:center; font-size:12px; color:#aaa; margin-top:15px;">Rabel 安全承诺：信息仅保存在本地</p>
+            </div>
+        </div>
+
+        <!-- 2. Record Dream -->
+        <div id="view-record" class="view-section">
+            <div class="view-container">
+                <header>
+                    <h1 id="home-greeting">你好</h1>
+                    <p class="subtitle">准备好记录今晚的旅程了吗？</p>
+                </header>
+
+                <!-- Sleep Tracker -->
+                <div class="tracker-card">
+                    <div style="font-size:13px; font-weight:600; color:#999;">昨晚睡得好吗？</div>
+                    <div class="mood-selector">
+                        <div class="mood-btn" onclick="selectMood(this, 'bad')">😫</div>
+                        <div class="mood-btn" onclick="selectMood(this, 'neutral')">😐</div>
+                        <div class="mood-btn" onclick="selectMood(this, 'good')">😌</div>
+                        <div class="mood-btn" onclick="selectMood(this, 'great')">😴</div>
+                    </div>
+                    <div class="slider-container">
+                        <span>时长</span>
+                        <input type="range" id="sleep-hours" min="0" max="12" step="0.5" value="7" oninput="document.getElementById('hours-val').innerText=this.value">
+                        <span style="width:40px; text-align:right;"><span id="hours-val">7</span>h</span>
+                    </div>
+                </div>
+
+                <!-- Dream Input -->
+                <textarea id="dream-input" placeholder="描述你的梦境...&#10;看见了什么颜色？听到了什么声音？"></textarea>
+
+                <!-- Analysis Mode Toggle -->
+                <div class="mode-toggle">
+                    <div class="mode-option active" id="mode-heal" onclick="setMode('heal')">🍃 治愈艺术</div>
+                    <div class="mode-option" id="mode-psych" onclick="setMode('psych')">🧠 深度心理</div>
+                </div>
+
+                <button class="btn-primary" onclick="processDream()">
+                    <span>开始解析</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 3. Result View -->
+        <div id="view-result" class="view-section">
+            <div class="view-container">
+                <div class="visual-card" id="result-visual">
+                    <img id="result-img" src="" alt="Dream Art">
+                </div>
+
+                <div class="analysis-box">
+                    <div id="result-tags" class="tag">分析生成中...</div>
+                    <h2 id="result-title">梦的映射</h2>
+                    <p id="result-text" style="font-size:15px; line-height:1.7; color:#333; text-align:justify;"></p>
+                </div>
+
+                <div style="display:flex; gap:10px;">
+                    <button class="btn-primary btn-ghost" style="margin-top:0; flex:1;" onclick="switchTab('record')">返回</button>
+                    <button class="btn-primary" style="margin-top:0; flex:1;" onclick="openShare()">分享卡片</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. History View -->
+        <div id="view-history" class="view-section">
+            <div class="view-container">
+                <header>
+                    <h1>记忆档案</h1>
+                    <p class="subtitle">你所有的潜意识碎片</p>
+                </header>
+                <div id="history-list" style="padding-bottom: 60px;"></div>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="bottom-nav" id="main-nav" style="display:none;">
+            <div class="nav-item active" data-target="record" onclick="switchTab('record')">
+                <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+            </div>
+            <div class="nav-item" data-target="history" onclick="switchTab('history')">
+                <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+            </div>
+        </nav>
+
+        <!-- Loading Overlay -->
+        <div id="loader" class="loader">
+            <div class="pulse-ring"></div>
+            <p style="margin-top:20px; font-size:14px; color:#888;">Rabel AI 正在连接潜意识...</p>
+        </div>
+
+        <!-- Share Modal -->
+        <div class="share-modal" id="share-modal">
+            <div class="share-card" id="share-card-content">
+                <div class="visual-card" style="border-radius: 24px 24px 0 0; height: 200px; margin:0;">
+                    <img id="share-img" src="" style="width:100%; height:100%; object-fit:cover;">
+                </div>
+                
+                <div class="user-badge">
+                    <img id="share-avatar" class="badge-avatar" src="">
+                    <div class="badge-info">
+                        <h4 id="share-username">User</h4>
+                        <span id="share-date">NOV 20</span>
+                    </div>
+                </div>
+
+                <div style="padding: 20px;">
+                    <h3 style="font-size:16px; margin-bottom:10px;">梦境解析</h3>
+                    <p id="share-text" style="font-size:13px; color:#666; line-height:1.5; border-left:2px solid #000; padding-left:10px;"></p>
+                </div>
+                
+                <div style="background:#f9f9f9; padding:15px 20px; display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-size:10px; color:#999;">Generated by Dreamify</span>
+                    <span style="font-size:12px; font-weight:bold; font-family:serif;">Rabel</span>
+                </div>
+            </div>
+            <div style="position:absolute; bottom:30px; display:flex; gap:20px;">
+                <button class="btn-primary" style="width:auto; padding:0 30px; background:white; color:black;" onclick="closeShare()">关闭</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- Configuration & State ---
+        const CONFIG = {
+            storageKey: 'dreamify_rabel_v4_data',
+            userKey: 'dreamify_rabel_user'
+        };
+
+        let state = {
+            user: null,
+            currentMood: 'neutral',
+            analysisMode: 'heal', // heal | psych
+            audioPlaying: false
+        };
+
+        // 模拟 BGM 链接 (使用免版权的稳定 CDN 资源或占位)
+        // 这里为了演示稳定性，使用 Audio Context 模拟简单的环境音会太复杂，
+        // 故使用 reliable public domain loops. 
+        const AUDIO_SOURCES = {
+            ambient: "https://cdn.pixabay.com/audio/2022/05/27/audio_1808fbf07a.mp3", // Calm piano
+            dark: "https://cdn.pixabay.com/audio/2021/11/24/audio_82242b3518.mp3", // Deep ambient
+            bright: "https://cdn.pixabay.com/audio/2022/01/18/audio_d0a13f69d2.mp3" // Ethereal
+        };
+        
+        const bgmPlayer = new Audio();
+        bgmPlayer.loop = true;
+
+        // --- Psychology & Healing Database ---
+        const DB = {
+            healing: [
+                "梦境是你潜意识温柔的来信。这个画面虽然有些模糊，但它传递着一种希望。现在的你可能需要多一点时间来照顾自己。",
+                "这是一段非常具有治愈力量的旅程。即使梦中有波折，也象征着你内在的韧性正在生长。请相信，一切都会好起来的。",
+                "色彩在你的梦中流淌，那是情绪在寻找出口。不必担心未来的不确定性，享受当下的每一刻，你比想象中更强大。"
+            ],
+            psych: [
+                "【荣格视角】这个梦境揭示了你的“阴影”原型。那些让你不安的元素，其实是被压抑的创造力。试着在现实中接纳自己不完美的一面。",
+                "【潜意识分析】梦中的移动象征着生活状态的变迁。这种意象表明你正处于一个心理整合期，潜意识在试图平衡理智与情感的冲突。",
+                "【象征解读】水代表着无意识的情感海洋。你在梦中的反应，折射出你近期在处理亲密关系时的防御机制。建议尝试更敞开的沟通。"
+            ]
+        };
+
+        // --- Initialization ---
+        window.onload = () => {
+            loadUser();
+        };
+
+        function loadUser() {
+            const user = localStorage.getItem(CONFIG.userKey);
+            if (user) {
+                state.user = JSON.parse(user);
+                document.getElementById('view-onboarding').classList.remove('active');
+                document.getElementById('view-record').classList.add('active');
+                document.getElementById('main-nav').style.display = 'flex';
+                document.getElementById('home-greeting').innerText = `早安，${state.user.name}`;
+                // Start ambient music on click (browser policy)
+                document.body.addEventListener('click', initAudio, { once: true });
+            } else {
+                // Update avatar preview initially
+                updateAvatar('');
+            }
+        }
+
+        function initAudio() {
+            playBGM('ambient');
+        }
+
+        // --- User Onboarding ---
+        function updateAvatar(name) {
+            const seed = name || 'Dreamer';
+            // Notion style avatar (artistic)
+            const url = `https://api.dicebear.com/7.x/notionists/svg?seed=${seed}&backgroundColor=e0c3fc,c0e9fb`;
+            document.getElementById('onboard-avatar').src = url;
+        }
+
+        function finishOnboarding() {
+            const name = document.getElementById('username-input').value.trim() || 'Dreamer';
+            const avatar = document.getElementById('onboard-avatar').src;
+            
+            state.user = { name, avatar };
+            localStorage.setItem(CONFIG.userKey, JSON.stringify(state.user));
+            
+            // Transition
+            document.getElementById('view-onboarding').classList.remove('active');
+            document.getElementById('view-record').classList.add('active');
+            document.getElementById('main-nav').style.display = 'flex';
+            document.getElementById('home-greeting').innerText = `早安，${name}`;
+            
+            initAudio();
+        }
+
+        // --- Core Functions ---
+        function selectMood(btn, mood) {
+            document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            state.currentMood = mood;
+        }
+
+        function setMode(mode) {
+            state.analysisMode = mode;
+            document.querySelectorAll('.mode-option').forEach(el => el.classList.remove('active'));
+            document.getElementById('mode-' + mode).classList.add('active');
+        }
+
+        function processDream() {
+            const text = document.getElementById('dream-input').value.trim();
+            if (!text) return alert('请先记录下你的梦境...');
+
+            // UI Transition
+            document.getElementById('loader').classList.add('show');
+            
+            // Logic Simulation
+            setTimeout(() => {
+                // 1. Analysis Text
+                const lib = state.analysisMode === 'psych' ? DB.psych : DB.healing;
+                const analysis = lib[Math.floor(Math.random() * lib.length)];
+                
+                // 2. Image Generation (Picsum with seed based on text length)
+                // Using Lorem Picsum for reliable CC0 images
+                const seed = text.length + Math.floor(Math.random()*100);
+                const imgUrl = `https://picsum.photos/seed/${seed}/600/400`;
+
+                // 3. Determine Vibe for BGM change
+                let vibe = 'bright';
+                if (text.includes('黑') || text.includes('哭') || text.includes('怕')) vibe = 'dark';
+                
+                // 4. Save Data
+                const dreamData = {
+                    id: Date.now(),
+                    date: new Date().toLocaleDateString('zh-CN', {month:'short', day:'numeric'}),
+                    text: text,
+                    analysis: analysis,
+                    image: imgUrl,
+                    mood: state.currentMood,
+                    sleep: document.getElementById('sleep-hours').value,
+                    mode: state.analysisMode,
+                    vibe: vibe
+                };
+                saveToHistory(dreamData);
+
+                // 5. Render Result
+                showResult(dreamData);
+                
+                // 6. Switch BGM
+                playBGM(vibe);
+
+                document.getElementById('loader').classList.remove('show');
+            }, 2500);
+        }
+
+        function saveToHistory(data) {
+            const history = JSON.parse(localStorage.getItem(CONFIG.storageKey) || '[]');
+            history.unshift(data);
+            localStorage.setItem(CONFIG.storageKey, JSON.stringify(history));
+        }
+
+        function showResult(data) {
+            document.getElementById('result-img').src = data.image;
+            document.getElementById('result-title').innerText = data.mode === 'psych' ? '深度心理映射' : '治愈意象解析';
+            document.getElementById('result-text').innerText = data.analysis;
+            document.getElementById('result-tags').innerText = `睡眠 ${data.sleep}h · 心情 ${data.mood}`;
+            
+            switchTab('result');
+            document.getElementById('dream-input').value = ''; // Clear
+        }
+
+        // --- View Switching ---
+        function switchTab(tab) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            
+            if (tab === 'record') {
+                document.getElementById('view-record').classList.add('active');
+                document.querySelector('[data-target="record"]').classList.add('active');
+                playBGM('ambient'); // Back to ambient
+            } else if (tab === 'history') {
+                renderHistory();
+                document.getElementById('view-history').classList.add('active');
+                document.querySelector('[data-target="history"]').classList.add('active');
+            } else if (tab === 'result') {
+                document.getElementById('view-result').classList.add('active');
+            }
+        }
+
+        function renderHistory() {
+            const list = document.getElementById('history-list');
+            const data = JSON.parse(localStorage.getItem(CONFIG.storageKey) || '[]');
+            list.innerHTML = '';
+
+            if (data.length === 0) {
+                list.innerHTML = '<div style="text-align:center; color:#ccc; margin-top:50px;">暂无记录</div>';
+                return;
+            }
+
+            data.forEach(item => {
+                const div = document.createElement('div');
+                div.style.cssText = `
+                    background: white; border-radius: 20px; padding: 15px; margin-bottom: 15px;
+                    box-shadow: 0 5px 15px rgba(0,0,0,0.03); display: flex; gap: 15px; cursor: pointer;
+                `;
+                div.onclick = () => showResult(item);
+                div.innerHTML = `
+                    <img src="${item.image}" style="width:60px; height:60px; border-radius:12px; object-fit:cover;">
+                    <div style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+                        <div style="font-size:12px; color:#9b59b6; margin-bottom:4px;">${item.date}</div>
+                        <div style="font-size:14px; color:#333; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">${item.text}</div>
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        // --- Audio Control ---
+        function playBGM(type) {
+            // In a real app, you'd fade out/in. Simple source switch here.
+            const src = AUDIO_SOURCES[type] || AUDIO_SOURCES.ambient;
+            if (bgmPlayer.src !== src) {
+                bgmPlayer.src = src;
+                bgmPlayer.volume = 0.4;
+                bgmPlayer.play().catch(e => console.log("Autoplay blocked until interaction"));
+                state.audioPlaying = true;
+                document.getElementById('bgm-btn').style.opacity = 1;
+            }
+        }
+
+        function toggleMute() {
+            if (bgmPlayer.paused) {
+                bgmPlayer.play();
+                document.getElementById('bgm-btn').style.opacity = 1;
+            } else {
+                bgmPlayer.pause();
+                document.getElementById('bgm-btn').style.opacity = 0.4;
+            }
+        }
+
+        // --- Share System ---
+        function openShare() {
+            const modal = document.getElementById('share-modal');
+            const data = JSON.parse(localStorage.getItem(CONFIG.storageKey))[0]; // Get latest or pass current
+            
+            document.getElementById('share-img').src = document.getElementById('result-img').src;
+            document.getElementById('share-text').innerText = document.getElementById('result-text').innerText;
+            document.getElementById('share-username').innerText = state.user.name;
+            document.getElementById('share-avatar').src = state.user.avatar;
+            document.getElementById('share-date').innerText = data.date;
+
+            modal.classList.add('open');
+        }
+
+        function closeShare() {
+            document.getElementById('share-modal').classList.remove('open');
+        }
+
+    </script>
+</body>
+</html>
